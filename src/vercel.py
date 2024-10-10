@@ -30,7 +30,7 @@ class VercelAPI:
         )
 
         for env in response.json()['envs']:
-            if env['key'] == self.vercel_env_name:
+            if env['key'] == self.vercel_env_name and 'production' in env['target']:
                 return env['id']
             
     def _retrieve_deployment_id(self):
@@ -45,7 +45,7 @@ class VercelAPI:
         json_data = {
             'comment': 'current battleships deployed contract',
             'key': self.vercel_env_name,
-            'target': ['preview', 'production', 'development'],
+            'target': ['production'],
             'type': 'encrypted',
             'value': address,
         }
