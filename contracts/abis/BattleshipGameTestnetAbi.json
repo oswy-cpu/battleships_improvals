@@ -1,0 +1,504 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "winner",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "totalZENAllocated",
+				"type": "uint256"
+			}
+		],
+		"name": "GameOver",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "x",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint8",
+				"name": "y",
+				"type": "uint8"
+			}
+		],
+		"name": "hit",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint8[2]",
+				"name": "guessedCoords",
+				"type": "uint8[2]"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "success",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "sunk",
+				"type": "bool"
+			},
+			{
+				"components": [
+					{
+						"internalType": "uint8",
+						"name": "x",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "y",
+						"type": "uint8"
+					}
+				],
+				"indexed": false,
+				"internalType": "struct BattleshipGame.Position[]",
+				"name": "allHits",
+				"type": "tuple[]"
+			},
+			{
+				"components": [
+					{
+						"internalType": "uint8",
+						"name": "x",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "y",
+						"type": "uint8"
+					}
+				],
+				"indexed": false,
+				"internalType": "struct BattleshipGame.Position[]",
+				"name": "allMisses",
+				"type": "tuple[]"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool[249]",
+				"name": "graveyard",
+				"type": "bool[249]"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "totalZENAllocated",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "zenTransferred",
+				"type": "uint256"
+			}
+		],
+		"name": "HitFeedback",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "gameOver",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getAllHits",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint8",
+						"name": "x",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "y",
+						"type": "uint8"
+					}
+				],
+				"internalType": "struct BattleshipGame.Position[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getAllMisses",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint8",
+						"name": "x",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "y",
+						"type": "uint8"
+					}
+				],
+				"internalType": "struct BattleshipGame.Position[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getAllShipPositions",
+		"outputs": [
+			{
+				"components": [
+					{
+						"components": [
+							{
+								"internalType": "uint8",
+								"name": "x",
+								"type": "uint8"
+							},
+							{
+								"internalType": "uint8",
+								"name": "y",
+								"type": "uint8"
+							}
+						],
+						"internalType": "struct BattleshipGame.Position",
+						"name": "start",
+						"type": "tuple"
+					},
+					{
+						"internalType": "bool[3]",
+						"name": "hits",
+						"type": "bool[3]"
+					}
+				],
+				"internalType": "struct BattleshipGame.Ship[249]",
+				"name": "",
+				"type": "tuple[249]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getGraveyard",
+		"outputs": [
+			{
+				"internalType": "bool[249]",
+				"name": "",
+				"type": "bool[249]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "shipIndex",
+				"type": "uint8"
+			}
+		],
+		"name": "getHitsOnShip",
+		"outputs": [
+			{
+				"internalType": "bool[3]",
+				"name": "",
+				"type": "bool[3]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPersonalStats",
+		"outputs": [
+			{
+				"internalType": "uint16",
+				"name": "personalHits",
+				"type": "uint16"
+			},
+			{
+				"internalType": "uint16",
+				"name": "personalSinks",
+				"type": "uint16"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "x",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint8",
+				"name": "y",
+				"type": "uint8"
+			}
+		],
+		"name": "getShipAtPosition",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "shipIndex",
+				"type": "uint8"
+			}
+		],
+		"name": "getShipPosition",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint8",
+						"name": "x",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "y",
+						"type": "uint8"
+					}
+				],
+				"internalType": "struct BattleshipGame.Position",
+				"name": "",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getZenTokenBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "graveyard",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint16",
+				"name": "",
+				"type": "uint16"
+			}
+		],
+		"name": "hits",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "x",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint8",
+				"name": "y",
+				"type": "uint8"
+			}
+		],
+		"name": "isHit",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "shipIndex",
+				"type": "uint8"
+			}
+		],
+		"name": "isSunk",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "rewardToken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ships",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint8",
+						"name": "x",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "y",
+						"type": "uint8"
+					}
+				],
+				"internalType": "struct BattleshipGame.Position",
+				"name": "start",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "sunkShipsCount",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalZENAllocated",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]

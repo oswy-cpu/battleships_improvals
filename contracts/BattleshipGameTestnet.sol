@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract BattleshipGame is Ownable {
+contract BattleshipGame {
     uint8 constant gridSize = 100;
     uint8 constant totalShips = 249;
     uint8 constant shipLength = 3;
+    uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
+    uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
+    uint256 constant FINAL_SINK_REWARD = 20 * 10**18; // 20 ZEN tokens
 
     struct Position {
         uint8 x;
@@ -22,27 +24,31 @@ contract BattleshipGame is Ownable {
     Ship[totalShips] public ships;
     mapping(uint16 => uint8) private positionToShipIndex;
     mapping(uint16 => bool) public hits;
+    mapping(uint16 => bool) private misses;
     uint256 private seed;
     uint256 private nonce = 0;
-    uint256 public prizePool;
     bool[totalShips] public graveyard;
     uint8 public sunkShipsCount;
     bool public gameOver;
-
-    Position[] public hitPositions;
+    Position[] private allHits;
+    Position[] private allMisses;
 
     mapping(address => uint16) private playerHits;
     mapping(address => uint16) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
+    uint256 public totalZENAllocated; // Track total ZEN tokens allocated
 
-    event GameOver(address winner, uint256 prizePool);
-    event HitWithToken(address indexed player, uint8 x, uint8 y);
+    IERC20 public rewardToken;
 
-    constructor() Ownable(msg.sender) {
-            seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
-            generatePositions();
-        }
+    event GameOver(address winner, uint256 totalZENAllocated);
+    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred);
+
+    constructor(address tokenAddress) {
+        rewardToken = IERC20(tokenAddress);
+        seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
+        generatePositions();
+    }
 
     function generatePositions() private {
         uint8 index = 0;
@@ -56,7 +62,7 @@ contract BattleshipGame is Ownable {
                     ships[index].start = Position(x, y);
                     for (uint8 j = 0; j < shipLength; j++) {
                         uint16 positionKey = packCoordinates(x + j, y);
-                        positionToShipIndex[positionKey] = index;
+                        positionToShipIndex[positionKey] = index + 1;
                     }
                     index++;
                 }
@@ -82,8 +88,8 @@ contract BattleshipGame is Ownable {
     }
 
     function getShipPosition(uint8 shipIndex) public view returns (Position memory) {
-        require(shipIndex < totalShips, 'Ship index out of bounds');
-        return ships[shipIndex].start;
+        require(shipIndex - 1 < totalShips, 'Ship index out of bounds');
+        return ships[shipIndex - 1].start;
     }
 
     function getAllShipPositions() public view returns (Ship[totalShips] memory) {
@@ -99,36 +105,31 @@ contract BattleshipGame is Ownable {
 
     function hit(uint8 x, uint8 y) public payable {
         require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.0443 ether, 'Incorrect fee amount');
+        require(msg.value == 0.00443 ether, 'Incorrect fee amount');
         uint16 positionKey = packCoordinates(x, y);
         require(!hits[positionKey], 'Cell already hit');
-        prizePool += msg.value; // Increment prize pool with the ETH sent by the player
         _processHit(msg.sender, x, y);
-    }
-
-    function hitWithAddress(address player, uint8 x, uint8 y) public payable {
-        require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.0443 ether, 'Incorrect fee amount');
-        uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
-        prizePool += msg.value; // Increment prize pool with the ETH sent by the player
-        _processHit(player, x, y);
     }
 
     function _processHit(address player, uint8 x, uint8 y) private {
         uint16 positionKey = packCoordinates(x, y);
         require(!hits[positionKey], 'Cell already hit');
+        bool success;
+        bool sunk;
+        uint256 zenTransferred = 0;
 
         hits[positionKey] = true;
-        hitPositions.push(Position(x, y));
         totalHits++;
         playerHits[player]++;
 
         uint8 shipIndex = positionToShipIndex[positionKey];
         if (shipIndex != 0) {
+            shipIndex--;
+            success = true;
             Ship storage ship = ships[shipIndex];
             uint8 hitIndex = x - ship.start.x;
             ship.hits[hitIndex] = true;
+            allHits.push(Position(x, y));
 
             bool allHit = true;
             for (uint8 i = 0; i < shipLength; i++) {
@@ -138,17 +139,33 @@ contract BattleshipGame is Ownable {
                 }
             }
             if (allHit) {
+                sunk = true;
                 graveyard[shipIndex] = true;
                 sunkShipsCount++;
                 playerSinks[player]++;
-
                 if (sunkShipsCount == totalShips) {
                     gameOver = true;
                     lastSunkShipPlayer = player;
-                    emit GameOver(lastSunkShipPlayer, prizePool);
+                    zenTransferred = FINAL_SINK_REWARD;
+                    emit GameOver(lastSunkShipPlayer, totalZENAllocated);
+                } else {
+                    zenTransferred = SINK_REWARD;
                 }
+            } else {
+                zenTransferred = HIT_REWARD;
             }
+        } else {
+            success = false;
+            misses[positionKey] = true;
+            allMisses.push(Position(x, y));
         }
+
+        if (zenTransferred > 0) {
+            require(rewardToken.transfer(player, zenTransferred), "Token transfer failed");
+            totalZENAllocated += zenTransferred;
+        }
+
+        emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred);
     }
 
     function isHit(uint8 x, uint8 y) public view returns (bool) {
@@ -171,7 +188,11 @@ contract BattleshipGame is Ownable {
     }
 
     function getAllHits() public view returns (Position[] memory) {
-        return hitPositions;
+        return allHits;
+    }
+
+    function getAllMisses() public view returns (Position[] memory) {
+        return allMisses;
     }
 
     function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {
@@ -180,25 +201,7 @@ contract BattleshipGame is Ownable {
         return (personalHits, personalSinks);
     }
 
-    function claimReward() public {
-        require(gameOver, 'Game is not over yet');
-        uint256 reward;
-
-        uint256 hitReward = (prizePool * 30) / 100;
-        reward += (hitReward * playerHits[msg.sender]) / totalHits;
-
-        uint256 sinkReward = (prizePool * 65) / 100;
-        reward += (sinkReward * playerSinks[msg.sender]) / sunkShipsCount;
-
-        if (msg.sender == lastSunkShipPlayer) {
-            uint256 finalShipReward = (prizePool * 5) / 100;
-            reward += finalShipReward;
-        }
-
-        playerHits[msg.sender] = 0;
-        playerSinks[msg.sender] = 0;
-
-        payable(msg.sender).transfer(reward);
+    function getZenTokenBalance() public view returns (uint256) {
+        return rewardToken.balanceOf(address(this));
     }
-
 }
